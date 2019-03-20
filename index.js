@@ -7,20 +7,20 @@ const io = require('socket.io').listen(server);
 const boardMaker = require('./helper');
 
 var rooms = [
-    { id: 1, name: 'ʀᴏᴏᴍ: 𝕯𝖊𝖘𝖙𝖗𝖚𝖈𝖙𝖎𝖔𝖓', users: [], started: false},
-    { id: 2, name: 'ʀᴏᴏᴍ: 𝕻𝖆𝖎𝖓', users: [], started: false},
-    { id: 3, name: 'ʀᴏᴏᴍ: 𝕾𝖔𝖗𝖗𝖔𝖜', users: [], started: false},
-    { id: 4, name: 'ʀᴏᴏᴍ: 𝕯𝖊𝖛𝖆𝖘𝖙𝖆𝖙𝖎𝖔𝖓', users: [], started: false},
-    { id: 5, name: 'ʀᴏᴏᴍ: 𝕯𝖊𝖆𝖙𝖍', users: [], started: false},
-    { id: 6, name: 'ʀᴏᴏᴍ: 𝕰𝖓𝖉', users: [], started: false}
+    { id: 1, name: 'ʀᴏᴏᴍ: 𝕯𝖊𝖘𝖙𝖗𝖚𝖈𝖙𝖎𝖔𝖓', users: [], started: false,turn:0},
+    { id: 2, name: 'ʀᴏᴏᴍ: 𝕻𝖆𝖎𝖓', users: [], started: false,turn:0},
+    { id: 3, name: 'ʀᴏᴏᴍ: 𝕾𝖔𝖗𝖗𝖔𝖜', users: [], started: false,turn:0},
+    { id: 4, name: 'ʀᴏᴏᴍ: 𝕯𝖊𝖛𝖆𝖘𝖙𝖆𝖙𝖎𝖔𝖓', users: [], started: false,turn:0},
+    { id: 5, name: 'ʀᴏᴏᴍ: 𝕯𝖊𝖆𝖙𝖍', users: [], started: false,turn:0},
+    { id: 6, name: 'ʀᴏᴏᴍ: 𝕰𝖓𝖉', users: [], started: false,turn:0}
   ];
 
 io.sockets.on('connection', (socket)=>{
 
     socket.on('disconnect', () =>{
         
-        let index = rooms.findIndex(room => room.id == socket.room);
-        let userIndex = rooms[index].users.findIndex(user => socket.name == user.name);
+        let index = rooms.findIndex(room => room.id = socket.room);
+        let userIndex = rooms[index].users.findIndex(user => socket.name = user.name);
         rooms[index].users.splice(userIndex, 1);
         
         
@@ -44,22 +44,39 @@ io.sockets.on('connection', (socket)=>{
 
 
     socket.on("click",(coord)=>{
+
         let currentroom = rooms.find((cr) => cr.id == coord.room);
-        let currentuser = currentroom.users.find((cu) => cu = coord.name);
+        if(currentroom.users.length == 2){
+            let currentuser = currentroom.users.find((cu) => cu.name == coord.name);
+            let grant;
+            if(currentroom.turn === 0){
+                if(currentuser.name == currentroom.users[0].name){
+                    grant = 1;
+                    currentroom.turn = 1;
+                }
+                }
+            else {
+            if(currentroom.turn){
+                if(currentuser.name == currentroom.users[1].name){
+                    grant = 2;
+                    currentroom.turn = 0;
+                    }
+            }
+            }            
 
-        console.log(currentuser.turn);
-
-        let grant;
-        if(currentuser.turn==true){grant = true;currentuser.turn==false;}
-
-        console.log(currentuser.turn);
+        io.emit("in-lobby",rooms);
 
         io.sockets.in(socket.room).emit("grant", {
-            access: grant,
             user: coord.name,
-            coor: coord.click,
-            users: currentroom.users
+            users: currentroom.users,
+            coord: coord.click,
+            grant: grant,
+            cur: currentroom.turn
+
         });
+        
+            
+        }
     });
 
 
@@ -73,7 +90,7 @@ io.sockets.on('connection', (socket)=>{
             last = true;
             lastuser = user.name;
         }
-        else{last = false; currentuser.turn=true;}
+        else{last = false;}
 
 
         io.emit("in-lobby",rooms);
@@ -95,14 +112,14 @@ io.sockets.on('connection', (socket)=>{
         socket.name = gameinfo.name;
 	    socket.room = gameinfo.room;
         socket.join(gameinfo.room);
-
         let currentroom = rooms.find((match) => match.id == gameinfo.room );
         currentroom.users.push(gameinfo);
         
         
         if(currentroom.users.length == 2){
-        currentroom.started = true;        
+        currentroom.started = true; 
         }
+
         
         io.emit("in-lobby",rooms);
 
